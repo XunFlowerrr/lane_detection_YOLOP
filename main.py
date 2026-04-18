@@ -4,6 +4,7 @@ import argparse
 from pathlib import Path
 
 import cv2
+import numpy as np
 import torch
 
 sys.path.insert(0, str(Path(__file__).parent / "source"))
@@ -34,6 +35,7 @@ def make_parser():
     parser.add_argument("--project", default=str(ROOT / "runs" / "detect"))
     parser.add_argument("--name", default="exp")
     parser.add_argument("--exist-ok", action="store_true")
+    parser.add_argument("--lanes-only", action="store_true", help="show only lane lines, hide drivable area overlay")
     return parser
 
 
@@ -86,6 +88,8 @@ def detect(opt):
 
         da_seg_mask = driving_area_mask(seg)
         ll_seg_mask = lane_line_mask(ll)
+        if opt.lanes_only:
+            da_seg_mask = np.zeros_like(da_seg_mask)
 
         for i, det in enumerate(pred):
             p, s, im0, frame = path, "", im0s, getattr(dataset, "frame", 0)
@@ -104,7 +108,7 @@ def detect(opt):
                         line = (cls, *xywh, conf) if opt.save_conf else (cls, *xywh)
                         with open(txt_path + ".txt", "a") as f:
                             f.write(("%g " * len(line)).rstrip() % line + "\n")
-                    if save_img:
+                    if save_img and not opt.lanes_only:
                         plot_one_box(xyxy, im0, line_thickness=3)
 
             print(f"{s}Done. ({t2 - t1:.3f}s)")
