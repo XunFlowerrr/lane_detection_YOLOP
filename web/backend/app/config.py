@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 
 # web/backend/app/ -> web/backend/ -> web/ -> project root
-BACKEND_ROOT = Path(__file__).parent.parent
+BACKEND_ROOT = Path(__file__).resolve().parent.parent
 PROJECT_ROOT = BACKEND_ROOT.parent.parent
 
 MODEL_PATH = Path(os.getenv("MODEL_PATH", str(PROJECT_ROOT / "model" / "yolopv2.pt")))

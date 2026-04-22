@@ -32,6 +32,16 @@ from app.inference import InferenceResult, YOLOPv2
 _model: YOLOPv2 | None = None
 
 
+def _write_image(path: Path, image: np.ndarray) -> None:
+    """Save an image file using Python I/O so Unicode paths work on Windows."""
+    suffix = path.suffix.lower()
+    encode_ext = suffix if suffix in {".jpg", ".jpeg", ".png", ".webp"} else ".png"
+    success, buffer = cv2.imencode(encode_ext, image)
+    if not success:
+        raise RuntimeError(f"Failed to encode image for {path}")
+    path.write_bytes(buffer.tobytes())
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global _model
@@ -117,7 +127,7 @@ async def detect(
     run_dir = RESULTS_DIR / uid
     run_dir.mkdir(parents=True, exist_ok=True)
     result_filename = f"result{suffix}"
-    cv2.imwrite(str(run_dir / result_filename), result.result_image)
+    _write_image(run_dir / result_filename, result.result_image)
 
     # Store metadata for /api/results/{uid}
     _save_meta(run_dir, uid, filename, suffix, result, lanes_only, visualize,
@@ -132,7 +142,7 @@ async def detect(
         for step_name, img in result.viz_images.items():
             ext = ".png" if "mask" in step_name else ".jpg"
             fname = f"{step_name}{ext}"
-            cv2.imwrite(str(viz_dir / fname), img)
+            _write_image(viz_dir / fname, img)
             viz_urls[step_name] = f"/files/results/{uid}/viz/{fname}"
 
     return {

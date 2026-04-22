@@ -89,7 +89,10 @@ class YOLOPv2:
         self.device = select_device(device)
         self.half = self.device.type != "cpu"
         print(f"[YOLOPv2] Loading model from {MODEL_PATH} on {self.device} …")
-        self.model = torch.jit.load(str(MODEL_PATH), map_location=self.device)
+        # Open the model in Python so Torch does not have to reopen the
+        # Windows path itself. This avoids failures on non-ASCII workspace paths.
+        with MODEL_PATH.open("rb") as model_file:
+            self.model = torch.jit.load(model_file, map_location=self.device)
         self.model = self.model.to(self.device)
         if self.half:
             self.model.half()
